@@ -1,0 +1,54 @@
+def ModelElasticNet(X,Y,a):
+    scaler = StandardScaler()
+    Xs =X  ##scaler.fit_transform(X)
+    X_train, X_test, y_train, y_test = train_test_split(Xs, Y, test_size=0.2, random_state=0)
+    reg_enet = ElasticNet(alpha=a)
+    reg_enet.fit(X_train, y_train)
+    y_predic = reg_enet.predict(np.array(X_test))
+    
+    df1=pd.DataFrame()
+    df1=X_test.copy()
+    df1['Precio/m2']=y_test
+    df1['Pred']=y_predic
+    
+    y_predic=df1['Pred']*df1['m2']
+    y_test=df1['Precio/m2']*df1['m2']
+    
+    MAE_score = mean_absolute_error(y_predic,y_test)
+    #print('MAE por SplitData', MAE_score)
+    MSE_SCORE=np.sqrt(mean_squared_error(y_predic,y_test))
+    #print('MSE por SplitData', MSE_SCORE)
+    print(coli,MAE_score,'+/-',MSE_SCORE)
+    
+    #print(Y)
+    Y_y = np.floor((abs(y_predic/y_test-1))*100)
+    #print(Y_y)
+    bins = [-0.1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,10000]
+    S = pd.cut(Y_y, bins)
+    Y_exe = S.value_counts().reindex(S.cat.categories)
+    fig = plt.figure(figsize = (14, 7))
+    plt.plot(range(0,11), Y_exe, 'ro-') 
+    plt.xticks(range(0,12),bins) 
+    plt.ylabel('Frecuencia')
+    plt.xlabel('Rango en diferencia Porcentual')
+    #plt.show()
+    return reg_enet
+    
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+
+
+Colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,454,204]
+result={}
+Columnas_orden = ['m2', 'Rec', 'Est', 'Ba�']
+for i in Colonias_in:
+    Xx=X[X['Colonia2']==i][{'m2', 'Rec', 'Est', 'Ba�'}]
+    Xx = Xx.reindex(columns = Columnas_orden)
+    Yy=Y['Precio/m2'][Y['Colonia2']==i]
+    coli = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
+    #print(coli)
+    #print(len(Xx[Xx['Colonia2']==i]))
+    result[i]=ModelElasticNet(Xx,Yy,0.1)
+    result
+    
+joblib.dump(result, 'modelo_entrenado_Elastic.pkl')
