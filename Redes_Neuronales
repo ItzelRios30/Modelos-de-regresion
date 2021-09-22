@@ -1,0 +1,166 @@
+### Importar librerias
+
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+from keras import models
+from keras import layers
+from keras import optimizers
+from keras import regularizers
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+
+
+## Cargar base de datos
+%cd
+datalimpio =  pd.read_csv("Documents\Calculadora_Valuación_V3_DatosLimpios.csv")
+
+## Limpiar base de datos
+
+datalimpio['Colonia'] = datalimpio['Colonia'].str.lower()      #transformar a minusculas 
+Col_num = {'m2', 'Antig�edad','Est', 'Rec', 'Costo Mantenimiento', 'Precio de venta', 'Ba�'}
+Col_cat = {'Interior \nExteriror','Elev', 'Balc�n', 'Amenidades', 'Bodega', 'Cuarto de servicio', 'Jaula de tendido', 'Seguridad'}
+Col_col = {'Colonia'}
+datos = datalimpio[set.union(Col_num , Col_cat, Col_col)]
+
+#Eliminar comas y signo de pesos
+datos['Precio de venta'] = datos['Precio de venta'].str.replace(',', '')
+datos['Precio de venta'] = datos['Precio de venta'].str.replace('$', '')
+datos['m2'] = datos['m2'].str.replace(',', '')
+
+## Para las variables númericas sustituir los valores nulos con 0 y transformar a int64
+for i in Col_num:
+    datos[i] = pd.to_numeric(datos[i],errors='coerce') 
+    datos = datos.replace(np.nan, 0, regex=True)
+    datos[i] = datos[i].astype(np.int64)
+    
+## Pära las variables categoricas transformar de {Sí, No, Nolose} a {1, 2, 3}
+
+for i in Col_cat:
+    datos[i] = datos[i].str.replace('No', '2')
+    datos[i] = datos[i].str.replace('no', '2')
+    datos[i] = datos[i].str.replace('S�', '1')
+    datos[i] = datos[i].fillna(3) #NO lo se
+    
+#transformar variables {exterior, interior, final} a {1,2, 3}
+datos['Interior \nExteriror'] = datos['Interior \nExteriror'].str.replace('Interior', '1')
+datos['Interior \nExteriror'] = datos['Interior \nExteriror'].str.replace('interior', '1')
+datos['Interior \nExteriror'] = datos['Interior \nExteriror'].str.replace('Exterior', '2')
+datos['Interior \nExteriror'] = datos['Interior \nExteriror'].fillna(3)
+
+#Filtrar Datos
+datos_fil = datos[((datos['Antig�edad'] < 40))
+                 & ( datos['Est'] < 4 ) 
+                 & ((datos['Rec']>0) & (datos['Rec'] < 5))
+                 & (datos['Ba�'] <4) 
+                 & ((datos['Costo Mantenimiento'] < 4000) ) 
+                 & (datos['m2']< 185) 
+                 & (datos['Precio de venta']< 0.4e+07) & (datos['Precio de venta'] > 1e+06)].reset_index()
+                 
+#Seleccionar el orden de las columnas
+Columnas_orden = ['m2', 'Rec', 'Est', 'Ba�', "Colonia2"]
+
+## Valores de OUTPUT precio de metro cuadrado en el mercado Output
+Y = (datos_fil['Precio de venta']/datos_fil['m2']).astype(np.int64)
+
+#Variables INPUT del modelo
+Col_in = {'Est', 'Rec', 'Ba�','m2',"Colonia2"}
+X = datos_fil[Col_in].astype(np.int64)
+X = X.reindex(columns = Columnas_orden) 
+
+
+#Dividir los datos de entrenamiento y de testing
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.20, random_state=40)
+
+#Estandarizar las variables
+X_max = X_train.max(axis=0)
+X_min = X_train.min(axis=0)
+
+Y_max = y_train.max(axis=0)
+Y_min = y_train.min(axis=0)
+
+X_train -= X_min
+X_train /= (X_max-X_min)
+
+y_train -= Y_min
+y_train /= (Y_max-Y_min)
+
+X_test -= X_min
+X_test /= (X_max-X_min)
+
+y_test -= Y_min
+y_test /= (Y_max-Y_min)
+
+
+##Construir el modelo de Redes Neuronales
+def build_model():
+    #Arquitectura de las redes
+    model = models.Sequential()
+    model.add(layers.Dense(512, kernel_regularizer=regularizers.l1(0.001), 
+                           activation = 'relu', input_shape = (X_train.shape[1],)))
+    model.add(layers.Dense(512, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(512, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(256, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(256, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(256, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(128, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(128, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(128, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(64, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(64, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(64, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(32, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(32, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(32, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(16, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(16, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(16, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(8, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(8, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(8, kernel_regularizer=regularizers.l1(0.001), activation = 'relu'))
+    model.add(layers.Dense(1))
+    model.compile(optimizer = optimizers.SGD(
+        learning_rate=0.001, momentum=0.5 , nesterov=True, name="SGD"),
+                  loss = 'mse', metrics =  ['mae'])
+    return model
+
+
+##Construir, entrenar y evaluar el modelo
+model = build_model()
+history = model.fit(X_train, y_train, epochs=1500, batch_size=309)
+results = model.evaluate(X_test, y_test)
+
+##Gráfica de la función de pertida y metrica
+history_dict = history.history
+loss_values = history_dict['loss']
+ErroMedioAbsoluto = history_dict['mae']
+epochs = range(1, 25000 + 1)
+plt.plot(epochs, loss_values, 'b', label='Training loss')
+plt.plot(epochs, ErroMedioAbsoluto, 'k', label='Training mae')
+plt.title('Training and MAE loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+
+##Guardar Modelo
+model.save('Redes_General.h5')
+
+## Gráfica de la distribución de errores de predicción
+MAE_score = mean_absolute_error(model.predict(X_test).reshape(-1,),y_test)
+#mean_absolute_error(y_test,y_predic)
+print('MAE por SplitData', MAE_score)
+print(y_test)
+print(model.predict(X_test).reshape(-1,))
+Y_y = np.floor(abs((model.predict(X_test).reshape(-1,))/(y_test)-1)*100)    
+print(Y_y)
+bins = [-0.1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 10000]
+S = pd.cut(Y_y, bins)
+Y_exe = S.value_counts().reindex(S.cat.categories)
+fig = plt.figure(figsize = (14, 7))
+plt.plot(range(0,11), Y_exe, 'ro-') 
+plt.xticks(range(0,12),bins) 
+plt.ylabel('Frecuencia')
+plt.xlabel('Rango en diferencia Porcentual')
+#plt.title(coli)#(datos_fil["Colonia"][datos_fil['Colonia2']==i].iloc[1])
+plt.show()
