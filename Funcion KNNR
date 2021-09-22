@@ -1,0 +1,60 @@
+#Funcion con el modelo de KNN Regression
+def ModelKNNR (X,Y):
+    
+    
+    scaler = StandardScaler()
+    #scaler.fit(X)  
+    Xs =X ##scaler.transform(X)
+    #Xt,Xv,yt,yv = train_test_split(X,Y,train_size=0.8,random_state=40)
+    X_train, X_test, y_train, y_test = train_test_split(Xs, Y, test_size=0.2, random_state=0)
+    
+    df=pd.DataFrame()
+    df=X.copy()
+    df['Precio/m2'] = Y
+    fig = plt.figure(figsize = (12, 5))
+    sns.heatmap(pd.DataFrame(df).corr(), vmin=-1, vmax=1, annot=True, cmap='Reds');
+    #plt.show()
+    
+    knr=neighbors.KNeighborsRegressor()
+    param_grid = {'n_neighbors': np.arange(5, 60, 1),'weights': ['uniform', 'distance'],'metric':['euclidean','minkowski','manhattan']}
+    grid = GridSearchCV(knr,param_grid)
+    grid.fit(X_train,y_train)
+
+
+    knr = grid.best_estimator_
+    Pred=knr.predict(X_test)
+    
+    df1=pd.DataFrame()
+    df1=X_test.copy()
+    df1['Precio/m2'] = y_test
+    df1['Pred']=Pred
+    
+    #print(df1)
+    Pred=df1['Pred']*df1['m2']
+    yv=df1['Precio/m2']*df1['m2']
+    
+    MAE_score = mean_absolute_error(Pred,yv)
+    #print('MAE por SplitData', MAE_score)
+    
+    MSE_SCORE=np.sqrt(mean_squared_error(Pred,yv))
+    #print('MSE por SplitData', MSE_SCORE)
+    
+    #print(coli,MAE_score,'+/-',MSE_SCORE)
+    print(MAE_score,'+/-',MSE_SCORE)
+    
+
+    Y_y = np.floor((abs(Pred/yv-1))*100)
+
+    bins = [-0.1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    S = pd.cut(Y_y, bins)
+    Y_exe = S.value_counts().reindex(S.cat.categories)
+    fig = plt.figure(figsize = (14, 7))
+    plt.plot(range(0,10), Y_exe, 'ro-') 
+    plt.xticks(range(0,11),bins) 
+    plt.ylabel('Frecuencia')
+    plt.xlabel('Rango en diferencia Porcentual')
+    #plt.title(coli)#(datos_fil["Colonia"][datos_fil['Colonia2']==i].iloc[1])
+    #plt.show()
+    
+     
+    return knr  
