@@ -58,3 +58,24 @@ def ModelKNNR (X,Y):
     
      
     return knr  
+    
+if not sys.warnoptions:
+warnings.simplefilter("ignore")
+
+
+Colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,454,204] ##
+result={}
+Resul_KNNR={}
+Columnas_orden = ['m2', 'Rec', 'Est', 'Ba�']
+for i in Colonias_in:
+    Xx=X[X['Colonia2']==i][{'m2', 'Rec', 'Est', 'Ba�'}]
+    Xx = Xx.reindex(columns = Columnas_orden)
+    Yy=Y['Precio/m2'][Y['Colonia2']==i]
+    coli = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
+    #print(coli)
+    #print(len(Xx[Xx['Colonia2']==i]))
+    
+    result[i]=ModelKNNR(Xx,Yy)
+    result
+    
+joblib.dump(result, 'modelo_entrenado_knnr.pkl')
