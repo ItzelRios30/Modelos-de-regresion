@@ -1,0 +1,65 @@
+def ModelXGBoost(X,Y,colsample,gamma,lr,depth,minchild,est,rega,regl,subsample,seed):
+    scaler = StandardScaler()
+    Xs =X  ## scaler.fit_transform(X)
+    X_train, X_test, y_train, y_test = train_test_split(Xs, Y, test_size=0.2, random_state=0)
+    
+    model_XGB = xgboost.XGBRegressor(colsample_bytree=colsample,
+                 gamma=gamma,                 
+                 learning_rate=lr,
+                 max_depth=depth,
+                 min_child_weight=minchild,
+                 n_estimators=est,                                                                    
+                 reg_alpha=rega,
+                 reg_lambda=regl,
+                 subsample=subsample,
+                 seed=seed)
+    
+    model_XGB.fit(X_train, y_train)
+
+    y_predic = model_XGB.predict(X_test)
+    
+    df1=pd.DataFrame()
+    df1=X_test.copy()
+    df1['Precio/m2']=y_test
+    df1['Pred']=y_predic
+    
+    y_predic=df1['Pred']*df1['m2']
+    y_test=df1['Precio/m2']*df1['m2']
+    
+    MAE_score = mean_absolute_error(y_predic,y_test)
+    #print('MAE por SplitData', MAE_score)
+    MSE_SCORE=np.sqrt(mean_squared_error(y_predic,y_test))
+    #print('MSE por SplitData', MSE_SCORE)
+    print(coli,MAE_score,'+/-',MSE_SCORE)
+    #print(Y)
+    Y_y = np.floor((abs(y_predic/y_test-1))*100)
+    #print(Y_y)
+    bins = [-0.1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,10000]
+    S = pd.cut(Y_y, bins)
+    Y_exe = S.value_counts().reindex(S.cat.categories)
+    fig = plt.figure(figsize = (14, 7))
+    plt.plot(range(0,11), Y_exe, 'ro-') 
+    plt.xticks(range(0,12),bins) 
+    plt.ylabel('Frecuencia')
+    plt.xlabel('Rango en diferencia Porcentual')
+    #plt.show()
+    return model_XGB
+    
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+
+
+Colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,454,204]
+result={}
+Columnas_orden = ['m2', 'Rec', 'Est', 'Ba�']
+for i in Colonias_in:
+    Xx=X[X['Colonia2']==i][{'m2', 'Rec', 'Est', 'Ba�'}]
+    Xx = Xx.reindex(columns = Columnas_orden)
+    Yy=Y['Precio/m2'][Y['Colonia2']==i]
+    coli = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
+    #print(coli)
+    #print(len(Xx[Xx['Colonia2']==i]))
+    result[i]=ModelXGBoost(Xx,Yy,0.4,0,0.07,6,1.5,10000,0.75,0.45,0.6,42)
+    result
+    
+joblib.dump(result, 'modelo_entrenado_xgboost.pkl')
