@@ -1,81 +1,80 @@
 #Funcion con el modelo de KNN Regression
-def ModelKNNR (X,Y):
-    
-    
-    scaler = StandardScaler()
-    #scaler.fit(X)  
-    Xs =X ##scaler.transform(X)
-    #Xt,Xv,yt,yv = train_test_split(X,Y,train_size=0.8,random_state=40)
-    X_train, X_test, y_train, y_test = train_test_split(Xs, Y, test_size=0.2, random_state=0)
-    
-    df=pd.DataFrame()
-    df=X.copy()
-    df['Precio/m2'] = Y
-    fig = plt.figure(figsize = (12, 5))
-    sns.heatmap(pd.DataFrame(df).corr(), vmin=-1, vmax=1, annot=True, cmap='Reds');
-    #plt.show()
+import sys
+import warnings
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+
+from sklearn import neighbors
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split
+
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+
+def MODEL_KNNR (X_regressor,Y_target):
+
+    X_train, X_test, y_train, y_test = train_test_split(X_regressor, Y_target, test_size=0.2, random_state=0)
     
     knr=neighbors.KNeighborsRegressor()
-    param_grid = {'n_neighbors': np.arange(5, 60, 1),'weights': ['uniform', 'distance'],'metric':['euclidean','minkowski','manhattan']}
-    grid = GridSearchCV(knr,param_grid)
+    
+    parameters_grid = {'n_neighbors': np.arange(5, 60, 1),
+                  'weights': ['uniform', 'distance'],
+                  'metric':['euclidean','minkowski','manhattan']}
+    
+    grid = GridSearchCV(knr,parameters_grid)
     grid.fit(X_train,y_train)
-
-
+    
     knr = grid.best_estimator_
-    Pred=knr.predict(X_test)
+    prediction=knr.predict(X_test)
     
-    df1=pd.DataFrame()
-    df1=X_test.copy()
-    df1['Precio/m2'] = y_test
-    df1['Pred']=Pred
+    df=pd.DataFrame()
+    df=X_test.copy()
+    df['price'] = y_test
+    df['prediction']=prediction
     
-    #print(df1)
-    Pred=df1['Pred']*df1['m2']
-    yv=df1['Precio/m2']*df1['m2']
+    if Y_target.name=='Precio/m2':
+        prediction=df['prediction']*df['m2']
+        y_validate=df['price']*df['m2']
+    else:
+        prediction=df['prediction']
+        y_validate=df['price']
     
-    MAE_score = mean_absolute_error(Pred,yv)
-    #print('MAE por SplitData', MAE_score)
-    
-    MSE_SCORE=np.sqrt(mean_squared_error(Pred,yv))
-    #print('MSE por SplitData', MSE_SCORE)
-    
-    #print(coli,MAE_score,'+/-',MSE_SCORE)
-    print(MAE_score,'+/-',MSE_SCORE)
+    MAE_score = mean_absolute_error(prediction,y_validate)
+    MSE_score=np.sqrt(mean_squared_error(prediction,y_validate))
+    print('Diferencia de',MAE_score,'+/-',MSE_score)
     
 
-    Y_y = np.floor((abs(Pred/yv-1))*100)
+    absolute_variation = np.floor((abs(prediction/y_validate-1))*100)
 
     bins = [-0.1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    S = pd.cut(Y_y, bins)
+    S = pd.cut(absolute_variation, bins)
     Y_exe = S.value_counts().reindex(S.cat.categories)
     fig = plt.figure(figsize = (14, 7))
     plt.plot(range(0,10), Y_exe, 'ro-') 
     plt.xticks(range(0,11),bins) 
     plt.ylabel('Frecuencia')
     plt.xlabel('Rango en diferencia Porcentual')
-    #plt.title(coli)#(datos_fil["Colonia"][datos_fil['Colonia2']==i].iloc[1])
-    #plt.show()
+    plt.show()
     
      
-    return knr  
+    return knr
     
-if not sys.warnoptions:
-    warnings.simplefilter("ignore")
 
-
-Colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,454,204] ##
+colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,454,204] ##
+columns_order = ['m2', 'Rec', 'Est', 'Ba�']
 result={}
-Resul_KNNR={}
-Columnas_orden = ['m2', 'Rec', 'Est', 'Ba�']
-for i in Colonias_in:
-    Xx=X[X['Colonia2']==i][{'m2', 'Rec', 'Est', 'Ba�'}]
-    Xx = Xx.reindex(columns = Columnas_orden)
-    Yy=Y['Precio/m2'][Y['Colonia2']==i]
-    coli = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
-    #print(coli)
-    #print(len(Xx[Xx['Colonia2']==i]))
+
+for i in colonias_in:
+    X_colonia=X[X['Colonia2']==i][{'m2', 'Rec', 'Est', 'Ba�'}]
+    X_colonia = X_colonia.reindex(columns = columns_order)
+    Y_colonia=Y['Precio/m2'][Y['Colonia2']==i]
+    name_colonia = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
+    print(name_colonia)
     
-    result[i]=ModelKNNR(Xx,Yy)
+    result[i]=MODEL_KNNR(X_colonia,Y_colonia)
     result
     
 joblib.dump(result, 'modelo_entrenado_knnr.pkl')
