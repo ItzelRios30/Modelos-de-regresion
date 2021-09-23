@@ -33,7 +33,7 @@ def Model_Promedio_m2(X_regressor,Y_target):
     
     MAE_score = mean_absolute_error(prediction,y_validate)
     MSE_SCORE=np.sqrt(mean_squared_error(prediction,y_validate))
-    print('En la colonia',coli,'la diferencia es de',MAE_score,'+/-',MSE_SCORE)
+    print('En la colonia',name_colonia,'la diferencia es de',MAE_score,'+/-',MSE_SCORE)
     
     
     absolute_variation = np.floor((abs(prediction/y_validate-1))*100)
@@ -56,7 +56,7 @@ result={}
 for i in Colonias_in:
     X_colonia=X[X['Colonia2']==i]
     Y_colonia=Y[Y['Colonia2']==i]['Precio/m2']
-    coli = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
+    name_colonia = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
 
     result[i]=Model_Promedio_m2(X_colonia,Y_colonia)
     result
