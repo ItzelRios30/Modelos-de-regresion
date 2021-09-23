@@ -44,7 +44,7 @@ def MODEL_KNNR (X_regressor,Y_target):
     
     MAE_score = mean_absolute_error(prediction,y_validate)
     MSE_score=np.sqrt(mean_squared_error(prediction,y_validate))
-    print('Diferencia de',MAE_score,'+/-',MSE_score)
+    print('En la colonia',name_colonia,'la diferencia es de',MAE_score,'+/-',MSE_score)
     
 
     absolute_variation = np.floor((abs(prediction/y_validate-1))*100)
@@ -72,7 +72,6 @@ for i in colonias_in:
     X_colonia = X_colonia.reindex(columns = columns_order)
     Y_colonia=Y['Precio/m2'][Y['Colonia2']==i]
     name_colonia = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
-    print(name_colonia)
     
     result[i]=MODEL_KNNR(X_colonia,Y_colonia)
     result
