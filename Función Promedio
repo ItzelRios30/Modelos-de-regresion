@@ -14,25 +14,25 @@ if not sys.warnoptions:
 
 def Model_Promedio_m2(X_regressor,Y_target):
     
-    X_train, X_test, y_train, y_test = train_test_split(X_regressor, Y_target, test_size=0.2, random_state=40)
+    X_train, X_test, y_train, y_test = train_test_split(X_regressor, Y_target, test_size = 0.2, random_state = 40)
     
-    df_train=pd.DataFrame()
-    df_train=X_train.copy()
+    df_train = pd.DataFrame()
+    df_train = X_train.copy()
     df_train['Price'] = y_train
     
-    medias=df_train[['Colonia2','Price']].groupby('Colonia2').mean()
+    medias = df_train[['Colonia2','Price']].groupby('Colonia2').mean()
     medias.rename(columns={'Price':'Price_mean_m2'}, inplace=True)
     
-    df_test=pd.DataFrame()
-    df_test=X_test.copy()
+    df_test = pd.DataFrame()
+    df_test = X_test.copy()
     df_test['Price'] = y_test
-    df_test=pd.merge(df_test,medias, on='Colonia2',how='left')
+    df_test = pd.merge(df_test,medias, on='Colonia2',how='left')
     
-    prediction=df_test['Price_mean_m2']*df_test['m2']
-    y_validate=df_test['Price']*df_test['m2']
+    prediction = df_test['Price_mean_m2']*df_test['m2']
+    y_validate = df_test['Price']*df_test['m2']
     
     MAE_score = mean_absolute_error(prediction,y_validate)
-    MSE_SCORE=np.sqrt(mean_squared_error(prediction,y_validate))
+    MSE_SCORE = np.sqrt(mean_squared_error(prediction,y_validate))
     print('En la colonia',name_colonia,'la diferencia es de',MAE_score,'+/-',MSE_SCORE)
     
     
@@ -54,11 +54,11 @@ Colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,4
 result={}
 
 for i in Colonias_in:
-    X_colonia=X[X['Colonia2']==i]
-    Y_colonia=Y[Y['Colonia2']==i]['Precio/m2']
+    X_colonia = X[X['Colonia2']==i]
+    Y_colonia = Y[Y['Colonia2']==i]['Precio/m2']
     name_colonia = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
 
-    result[i]=Model_Promedio_m2(X_colonia,Y_colonia)
+    result[i] = Model_Promedio_m2(X_colonia,Y_colonia)
     result
 
 result
