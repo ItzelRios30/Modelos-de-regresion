@@ -1,53 +1,64 @@
 #Funcion con el modelo de Promedio por M2
-def ModelPromm2(X,Y):
-    Xt,Xv,yt,yv = train_test_split(X,Y,train_size=0.8,random_state=40)
-    df=pd.DataFrame()
-    df=Xt.copy()
-    df['Precio/m2'] = yt
-    medias=df[['Colonia2','Precio/m2']].groupby('Colonia2').mean()
-    medias.rename(columns={'Precio/m2':'mediam2'}, inplace=True)
+import sys
+import warnings
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
+
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+
+def Model_Promedio_m2(X_regressor,Y_target):
     
-    df1=pd.DataFrame()
-    df1=Xv.copy()
-    df1['Precio/m2'] = yv
+    X_train, X_test, y_train, y_test = train_test_split(X_regressor, Y_target, test_size=0.2, random_state=40)
     
-    df1=pd.merge(df1,medias, on='Colonia2',how='left')
-    #print(df1)
-    Pred=df1['mediam2']*df1['m2']
-    Yt=df1['Precio/m2']*df1['m2'] #.astype(np.int64).reset_index()
+    df_train=pd.DataFrame()
+    df_train=X_train.copy()
+    df_train['Price'] = y_train
     
-    MAE_score = mean_absolute_error(Pred,Yt)
-    #print('MAE por SplitData', MAE_score)
-    MSE_SCORE=np.sqrt(mean_squared_error(Pred,Yt))
-    #print('MSE por SplitData', MSE_SCORE)
-    print(coli,MAE_score,'+/-',MSE_SCORE)
-    #print(Pred, Yt)
-    #Y_y=Pred/Yt
-    Y_y = np.floor((abs(Pred/Yt-1))*100)
-    #print(Y_y)
+    medias=df_train[['Colonia2','Price']].groupby('Colonia2').mean()
+    medias.rename(columns={'Price':'Price_mean_m2'}, inplace=True)
+    
+    df_test=pd.DataFrame()
+    df_test=X_test.copy()
+    df_test['Price'] = y_test
+    df_test=pd.merge(df_test,medias, on='Colonia2',how='left')
+    
+    prediction=df_test['Price_mean_m2']*df_test['m2']
+    y_validate=df_test['Price']*df_test['m2']
+    
+    MAE_score = mean_absolute_error(prediction,y_validate)
+    MSE_SCORE=np.sqrt(mean_squared_error(prediction,y_validate))
+    print('En la colonia',coli,'la diferencia es de',MAE_score,'+/-',MSE_SCORE)
+    
+    
+    absolute_variation = np.floor((abs(prediction/y_validate-1))*100)
     bins = [-0.1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,10000]
-    S = pd.cut(Y_y, bins)
-    #print(S)
+    S = pd.cut(absolute_variation, bins)
     Y_exe = S.value_counts().reindex(S.cat.categories)
     fig = plt.figure(figsize = (14, 7))
     plt.plot(range(0,11), Y_exe, 'ro-') 
     plt.xticks(range(0,12),bins) 
     plt.ylabel('Frecuencia')
     plt.xlabel('Rango en diferencia Porcentual')
-    #plt.title(coli)#(datos_fil["Colonia"][datos_fil['Colonia2']==i].iloc[1])
-    #plt.show()
+    plt.show()
     
     return medias
     
     
 Colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,454,204]
+result={}
 
-resultp={}
 for i in Colonias_in:
-    Xx=X[X['Colonia2']==i]
-    Yy=Y[Y['Colonia2']==i]['Precio/m2']
+    X_colonia=X[X['Colonia2']==i]
+    Y_colonia=Y[Y['Colonia2']==i]['Precio/m2']
     coli = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
-    #print(coli)
-    #print(len(Xx[Xx['Colonia2']==i]))
-    resultp[i]=ModelPromm2(Xx,Yy)
-    resultp
+
+    result[i]=Model_Promedio_m2(X_colonia,Y_colonia)
+    result
+
+result
