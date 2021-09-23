@@ -25,21 +25,21 @@ def Model_Polynomial_Regression(X_regressor,Y_target,n_degree):
 
     prediction = pol_reg.predict(poly_reg.fit_transform(np.array(X_test)))
     
-    df=pd.DataFrame()
-    df=X_test.copy()
-    df['price']=y_test
-    df['prediction']=prediction
+    df = pd.DataFrame()
+    df = X_test.copy()
+    df['price'] = y_test
+    df['prediction'] = prediction
 
-    if Y_target.name=='Precio/m2':
-        prediction=df['prediction']*df['m2']
-        y_validate=df['price']*df['m2']
+    if Y_target.name =='Precio/m2':
+        prediction = df['prediction']*df['m2']
+        y_validate = df['price']*df['m2']
     else:
-        prediction=df['prediction']
-        y_validate=df['price']
+        prediction = df['prediction']
+        y_validate = df['price']
     
     MAE_score = mean_absolute_error(prediction,y_validate)
-    MSE_SCORE=np.sqrt(mean_squared_error(prediction,y_validate))
-    print(coli,MAE_score,'+/-',MSE_SCORE)
+    MSE_score = np.sqrt(mean_squared_error(prediction,y_validate))
+    print('En la colonia',name_colonia,'la diferencia es de',MAE_score,'+/-',MSE_score)
 
     absolute_variation = np.floor((abs(prediction/y_validate-1))*100)
     
@@ -56,19 +56,17 @@ def Model_Polynomial_Regression(X_regressor,Y_target,n_degree):
     return poly_reg,pol_reg
     
 
-
-Colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,454,204]
-
+colonias_in = [365,363,305,452,148,46,392,87,440,444,436,20,319,339,196,438,15,454,204]
 result={}
-Columnas_orden = ['m2', 'Rec', 'Est', 'Ba�']
-for i in Colonias_in:
-    Xx=X[X['Colonia2']==i][{'m2', 'Rec', 'Est', 'Ba�'}]
-    Xx = Xx.reindex(columns = Columnas_orden)
-    Yy=Y['Precio/m2'][Y['Colonia2']==i]
-    coli = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
-    #print(coli)
-    #print(len(Xx[Xx['Colonia2']==i]))
-    result[i]=ModelRP(Xx,Yy,2)
+columns_order = ['m2', 'Rec', 'Est', 'Ba�']
+
+for i in colonias_in:
+    X_colonia = X[X['Colonia2']==i][{'m2', 'Rec', 'Est', 'Ba�'}]
+    X_colonia = X_colonia.reindex(columns = columns_order)
+    Y_colonia = Y['Precio/m2'][Y['Colonia2']==i]
+    name_colonia = str((x["Colonia"][x['Colonia2']==i].iloc[1]))
+    
+    result[i] = Model_Polynomial_Regression(X_colonia,Y_colonia,2)
     result
     
 joblib.dump(result, 'modelo_entrenado_poly.pkl')
